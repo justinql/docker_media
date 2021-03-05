@@ -1,0 +1,141 @@
+---
+version: "3"
+services:
+    jellyfin:
+        image: jellyfin/jellyfin
+        user: 1000:1000
+        container_name: jellyfin
+        environment:
+            - VIRTUAL_HOST=jellyfin.justinql.local
+            - JELLYFIN_PublishedServerUrl=https://jellyfin.justinql.local
+        volumes:
+            - jellyfin_config:/config
+            - jellyfin_cache:/cache
+            - movies:/media/movies
+            - shows:/media/shows
+        restart: unless-stopped
+    sonarr:
+        image: linuxserver/sonarr
+        container_name: sonarr
+        environment:
+            - VIRTUAL_HOST=sonarr.justinql.local
+            - VIRTUAL_PORT=8989
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Toronto
+        volumes:
+            - sonarr_config:/config
+            - shows:/tv
+            - downloads:/donload
+        restart: unless-stopped
+    radarr:
+        image: linuxserver/radarr
+        container_name: radarr
+        environment:
+            - VIRTUAL_HOST=radarr.justinql.local
+            - VIRTUAL_PORT=7878
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Toronto
+        volumes:
+            - radarr_config:/config
+            - movies:/movies
+            - downloads:/downloads
+        restart: unless-stopped
+    ombi:
+        image: linuxserver/ombi:development-version-v4.0.1136
+        container_name: ombi
+        environment:
+            - VIRTUAL_HOST=ombi.justinql.local
+            - VIRTUAL_PORT=3579
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Toronto
+        volumes:
+            - ombi_config:/config
+        restart: unless-stopped
+    nextcloud:
+        image: ghcr.io/linuxserver/nextcloud:latest
+        container_name: nextcloud
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Toronto
+            - VIRTUAL_HOST=nextcloud.justinql.local
+            - VIRTUAL_PORT=80
+        volumes:
+            - nextcloud_config:/config
+            - nextcloud_data:/data
+            - shows:/data/admin/files/shows/
+            - movies:/data/admin/files/movies/
+        restart: unless-stopped
+    hydra:
+        image: linuxserver/nzbhydra2
+        container_name: hydra
+        environment:
+            - VIRTUAL_HOST=hydra.justinql.local
+            - VIRTUAL_PORT=5076
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Toronto
+        volumes:
+            - nbzhydra_config:/config
+            - downloads:/downloads
+    deluge:
+        image: linuxserver/deluge
+        container_name: deluge
+        network_mode: "service:vpn"
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Toronto
+        volumes:
+            - deluge_config:/config
+            - downloads:/downloads
+        restart: unless-stopped
+    deluge_proxy:
+        image: dperson/nginx
+        container_name: deluge_proxy
+        depends_on:
+            - deluge
+        links:
+            - vpn:deluge
+        environment:
+            - VIRTUAL_HOST=deluge.justinql.local
+            - VIRTUAL_PORT=80
+            - TZ=America/Toronto
+        networks:
+            - default
+            - vpn-network
+        ports:
+            - 80
+        command: -w "http://deluge:8112;/"
+        restart: always
+    vpn:
+        image: dperson/openvpn-client
+        container_name: vpn
+        cap_add:
+            - NET_ADMIN
+        networks:
+            - vpn-network
+        volumes:
+            - openvpn_config:/vpn
+        dns:
+            - 8.8.8.8
+            - 8.8.4.4
+volumes:
+    ombi_config: {}
+    jellyfin_config: {}
+    jellyfin_cache: {}
+    sonarr_config: {}
+    radarr_config: {}
+    deluge_config: {}
+    nbzhydra_config: {}
+    shows: {}
+    movies: {}
+    downloads: {}
+    nextcloud_config: {}
+    nextcloud_data: {}
+    openvpn_config: {}
+networks:
+    vpn-network:
