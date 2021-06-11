@@ -1,13 +1,25 @@
 ---
 version: "3"
 services:
+    plex:
+        image: linuxserver/plex
+        environment:
+            - VIRTUAL_HOST=plex.justinql.ca
+            - VIRTUAL_PORT=32400
+            - PUID=1000
+            - PGID=1000
+            - VERSION=docker
+        volumes:
+            - plex_config:/config
+            - shows:/tv
+            - movies:/movies
     jellyfin:
         image: jellyfin/jellyfin
         user: 1000:1000
         container_name: jellyfin
         environment:
-            - VIRTUAL_HOST=jellyfin.justinql.local
-            - JELLYFIN_PublishedServerUrl=https://jellyfin.justinql.local
+            - VIRTUAL_HOST=jellyfin.justinql.ca
+            - JELLYFIN_PublishedServerUrl=https://jellyfin.justinql.ca
         volumes:
             - jellyfin_config:/config
             - jellyfin_cache:/cache
@@ -20,13 +32,14 @@ services:
         environment:
             - VIRTUAL_HOST=sonarr.justinql.local
             - VIRTUAL_PORT=8989
+            - NETWORK_ACCESS=internal
             - PUID=1000
             - PGID=1000
             - TZ=America/Toronto
         volumes:
             - sonarr_config:/config
             - shows:/tv
-            - downloads:/donload
+            - downloads:/download
         restart: unless-stopped
     radarr:
         image: linuxserver/radarr
@@ -34,6 +47,7 @@ services:
         environment:
             - VIRTUAL_HOST=radarr.justinql.local
             - VIRTUAL_PORT=7878
+            - NETWORK_ACCESS=internal
             - PUID=1000
             - PGID=1000
             - TZ=America/Toronto
@@ -46,7 +60,7 @@ services:
         image: linuxserver/ombi:development-version-v4.0.1136
         container_name: ombi
         environment:
-            - VIRTUAL_HOST=ombi.justinql.local
+            - VIRTUAL_HOST=ombi.justinql.ca
             - VIRTUAL_PORT=3579
             - PUID=1000
             - PGID=1000
@@ -63,6 +77,7 @@ services:
             - TZ=America/Toronto
             - VIRTUAL_HOST=nextcloud.justinql.local
             - VIRTUAL_PORT=80
+            - NETWORK_ACCESS=internal
         volumes:
             - nextcloud_config:/config
             - nextcloud_data:/data
@@ -75,6 +90,7 @@ services:
         environment:
             - VIRTUAL_HOST=hydra.justinql.local
             - VIRTUAL_PORT=5076
+            - NETWORK_ACCESS=internal
             - PUID=1000
             - PGID=1000
             - TZ=America/Toronto
@@ -100,15 +116,16 @@ services:
             - deluge
         links:
             - vpn:deluge
+        depends_on:
+            - deluge
         environment:
             - VIRTUAL_HOST=deluge.justinql.local
             - VIRTUAL_PORT=80
+            - NETWORK_ACCESS=internal
             - TZ=America/Toronto
         networks:
             - default
             - vpn-network
-        ports:
-            - 80
         command: -w "http://deluge:8112;/"
         restart: always
     vpn:
@@ -125,6 +142,7 @@ services:
             - 8.8.4.4
 volumes:
     ombi_config: {}
+    plex_config: {}
     jellyfin_config: {}
     jellyfin_cache: {}
     sonarr_config: {}
