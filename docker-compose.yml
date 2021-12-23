@@ -22,7 +22,7 @@ services:
             - JELLYFIN_PublishedServerUrl=https://jellyfin.justinql.ca
         volumes:
             - jellyfin_config:/config
-            - jellyfin_cache:/cache
+              #- jellyfin_cache:/cache
             - movies:/media/movies
             - shows:/media/shows
         restart: unless-stopped
@@ -30,7 +30,7 @@ services:
         image: linuxserver/sonarr
         container_name: sonarr
         environment:
-            - VIRTUAL_HOST=sonarr.justinql.local
+            - VIRTUAL_HOST=sonarr.jql
             - VIRTUAL_PORT=8989
             - NETWORK_ACCESS=internal
             - PUID=1000
@@ -39,7 +39,7 @@ services:
         volumes:
             - sonarr_config:/config
             - shows:/tv
-            - downloads:/download
+            - downloads:/downloads
         restart: unless-stopped
     radarr:
         image: linuxserver/radarr
@@ -97,6 +97,46 @@ services:
         volumes:
             - nbzhydra_config:/config
             - downloads:/downloads
+    sabnzbd:
+        image: sabnzbd/sabnzbd
+        environment:
+            - SABNZBD_UID=1000
+            - SABNZBD_GID=1000
+            - HOST_WHITELIST_ENTRIES=sabnzbd.jql,sabnzbd_proxy
+        container_name: sabnzbd
+        network_mode: "service:vpn"
+        volumes:
+            - sabnzbd_data:/datadir
+            - downloads:/downloads
+        restart: always
+    sabnzbd_proxy:
+        image: dperson/nginx
+        container_name: sabnzbd_proxy
+        depends_on:
+            - sabnzbd
+        links:
+            - vpn:sabnzbd
+        environment:
+            - VIRTUAL_HOST=sabnzbd.jql
+            - VIRTUAL_PORT=80
+            - NETWORK_ACCESS=internal
+            - TZ=America/Toronto
+        networks:
+            - default
+            - vpn-network
+        command: -w "http://sabnzbd:8080;/"
+        restart: always
+    vpn:
+        image: dperson/openvpn-client
+        container_name: vpn
+        cap_add:
+            - NET_ADMIN
+        networks:
+            - vpn-network
+        volumes:
+            - openvpn_config:/vpn
+        dns:
+            - 8.8.8.8
     deluge:
         image: linuxserver/deluge
         container_name: deluge
@@ -154,6 +194,7 @@ volumes:
     downloads: {}
     nextcloud_config: {}
     nextcloud_data: {}
+    sabnzbd_data: {}
     openvpn_config: {}
 networks:
     vpn-network:
