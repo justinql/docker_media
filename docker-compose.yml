@@ -18,8 +18,10 @@ services:
         user: 1000:1000
         container_name: jellyfin
         environment:
-            - VIRTUAL_HOST=jellyfin.justinql.ca
+            - VIRTUAL_HOST=jellyfin.justinql.ca,jellyfin2.justinql.ca
             - JELLYFIN_PublishedServerUrl=https://jellyfin.justinql.ca
+        ports:
+            - 8096:8096
         volumes:
             - jellyfin_config:/config
               #- jellyfin_cache:/cache
@@ -56,18 +58,6 @@ services:
             - movies:/movies
             - downloads:/downloads
         restart: unless-stopped
-    ombi:
-        image: linuxserver/ombi:development-version-v4.0.1136
-        container_name: ombi
-        environment:
-            - VIRTUAL_HOST=ombi.justinql.ca
-            - VIRTUAL_PORT=3579
-            - PUID=1000
-            - PGID=1000
-            - TZ=America/Toronto
-        volumes:
-            - ombi_config:/config
-        restart: unless-stopped
     nextcloud:
         image: ghcr.io/linuxserver/nextcloud:latest
         container_name: nextcloud
@@ -75,28 +65,41 @@ services:
             - PUID=1000
             - PGID=1000
             - TZ=America/Toronto
-            - VIRTUAL_HOST=nextcloud.justinql.local
-            - VIRTUAL_PORT=80
+            - VIRTUAL_HOST=nextcloud.jql
+            - VIRTUAL_PORT=443
+            - VIRTUAL_PROTO=https
             - NETWORK_ACCESS=internal
         volumes:
             - nextcloud_config:/config
             - nextcloud_data:/data
-            - shows:/data/admin/files/shows/
-            - movies:/data/admin/files/movies/
+              #- shows:/data/admin/files/shows/
+              #- movies:/data/admin/files/movies/
         restart: unless-stopped
-    hydra:
-        image: linuxserver/nzbhydra2
-        container_name: hydra
-        environment:
-            - VIRTUAL_HOST=hydra.justinql.local
-            - VIRTUAL_PORT=5076
-            - NETWORK_ACCESS=internal
-            - PUID=1000
-            - PGID=1000
-            - TZ=America/Toronto
-        volumes:
-            - nbzhydra_config:/config
-            - downloads:/downloads
+        #ombi:
+        #image: linuxserver/ombi:development-version-v4.0.1136
+        #container_name: ombi
+        #environment:
+        #- VIRTUAL_HOST=ombi.justinql.ca
+        #- VIRTUAL_PORT=3579
+        #- PUID=1000
+        #- PGID=1000
+        #- TZ=America/Toronto
+        #volumes:
+        #- ombi_config:/config
+        #restart: unless-stopped
+        #hydra:
+        #image: linuxserver/nzbhydra2
+        #container_name: hydra
+        #environment:
+        #- VIRTUAL_HOST=hydra.justinql.local
+        #- VIRTUAL_PORT=5076
+        #- NETWORK_ACCESS=internal
+        #- PUID=1000
+        #- PGID=1000
+        #- TZ=America/Toronto
+        #volumes:
+        #- nbzhydra_config:/config
+        #- downloads:/downloads
     sabnzbd:
         image: sabnzbd/sabnzbd
         environment:
@@ -107,6 +110,7 @@ services:
         network_mode: "service:vpn"
         volumes:
             - sabnzbd_data:/datadir
+            - sabnzbd_config:/config
             - downloads:/downloads
         restart: always
     sabnzbd_proxy:
@@ -137,6 +141,7 @@ services:
             - openvpn_config:/vpn
         dns:
             - 8.8.8.8
+            - 1.1.1.1
     deluge:
         image: linuxserver/deluge
         container_name: deluge
@@ -181,20 +186,21 @@ services:
             - 8.8.8.8
             - 8.8.4.4
 volumes:
-    ombi_config: {}
+    #ombi_config: {}
     plex_config: {}
     jellyfin_config: {}
     jellyfin_cache: {}
     sonarr_config: {}
     radarr_config: {}
     deluge_config: {}
-    nbzhydra_config: {}
+    #nbzhydra_config: {}
     shows: {}
     movies: {}
     downloads: {}
     nextcloud_config: {}
     nextcloud_data: {}
     sabnzbd_data: {}
+    sabnzbd_config: {}
     openvpn_config: {}
 networks:
     vpn-network:
