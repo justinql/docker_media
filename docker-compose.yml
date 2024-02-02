@@ -1,18 +1,6 @@
 ---
 version: "3"
 services:
-    plex:
-        image: linuxserver/plex
-        environment:
-            - VIRTUAL_HOST=plex.justinql.ca
-            - VIRTUAL_PORT=32400
-            - PUID=1000
-            - PGID=1000
-            - VERSION=docker
-        volumes:
-            - plex_config:/config
-            - shows:/tv
-            - movies:/movies
     jellyfin:
         image: jellyfin/jellyfin
         user: 1000:1000
@@ -29,10 +17,10 @@ services:
             - shows:/media/shows
         restart: unless-stopped
     sonarr:
-        image: linuxserver/sonarr
+        image:  lscr.io/linuxserver/sonarr
         container_name: sonarr
         environment:
-            - VIRTUAL_HOST=sonarr.jql
+            - VIRTUAL_HOST=sonarr.justinql.ca
             - VIRTUAL_PORT=8989
             - NETWORK_ACCESS=internal
             - PUID=1000
@@ -44,10 +32,10 @@ services:
             - downloads:/downloads
         restart: unless-stopped
     radarr:
-        image: linuxserver/radarr
+        image:  lscr.io/linuxserver/radarr
         container_name: radarr
         environment:
-            - VIRTUAL_HOST=radarr.justinql.local
+            - VIRTUAL_HOST=radarr.justinql.ca
             - VIRTUAL_PORT=7878
             - NETWORK_ACCESS=internal
             - PUID=1000
@@ -58,24 +46,24 @@ services:
             - movies:/movies
             - downloads:/downloads
         restart: unless-stopped
-    nextcloud:
-        image: ghcr.io/linuxserver/nextcloud:latest
-        container_name: nextcloud
-        environment:
-            - PUID=1000
-            - PGID=1000
-            - TZ=America/Toronto
-            - VIRTUAL_HOST=nextcloud.jql
-            - VIRTUAL_PORT=443
-            - VIRTUAL_PROTO=https
-            - NETWORK_ACCESS=internal
-        volumes:
-            - nextcloud_config:/config
-            - nextcloud_data:/data
-              #- shows:/data/admin/files/shows/
-              #- movies:/data/admin/files/movies/
-        restart: unless-stopped
-        #ombi:
+          #nextcloud:
+          #    image: ghcr.io/linuxserver/nextcloud:latest
+          #    container_name: nextcloud
+          #    environment:
+          #        - PUID=1000
+          #        - PGID=1000
+          #        - TZ=America/Toronto
+          #        - VIRTUAL_HOST=nextcloud.justinql.ca
+          #        - VIRTUAL_PORT=443
+          #        - VIRTUAL_PROTO=https
+          #        - NETWORK_ACCESS=internal
+          #    volumes:
+          #        - nextcloud_config:/config
+          #        - nextcloud_data:/data
+          #          #- shows:/data/admin/files/shows/
+          #          #- movies:/data/admin/files/movies/
+          #    restart: unless-stopped
+          #    #ombi:
         #image: linuxserver/ombi:development-version-v4.0.1136
         #container_name: ombi
         #environment:
@@ -101,11 +89,11 @@ services:
         #- nbzhydra_config:/config
         #- downloads:/downloads
     sabnzbd:
-        image: sabnzbd/sabnzbd
+        image:  lscr.io/linuxserver/sabnzbd
         environment:
-            - SABNZBD_UID=1000
-            - SABNZBD_GID=1000
-            - HOST_WHITELIST_ENTRIES=sabnzbd.jql,sabnzbd_proxy
+            - PUID=1000
+            - PGID=1000
+            - HOST_WHITELIST_ENTRIES=sabnzbd.justinql.ca,sabnzbd_proxy
         container_name: sabnzbd
         network_mode: "service:vpn"
         volumes:
@@ -121,7 +109,7 @@ services:
         links:
             - vpn:sabnzbd
         environment:
-            - VIRTUAL_HOST=sabnzbd.jql
+            - VIRTUAL_HOST=sabnzbd.justinql.ca
             - VIRTUAL_PORT=80
             - NETWORK_ACCESS=internal
             - TZ=America/Toronto
@@ -142,6 +130,7 @@ services:
         dns:
             - 8.8.8.8
             - 1.1.1.1
+        restart: always
     deluge:
         image: linuxserver/deluge
         container_name: deluge
@@ -164,7 +153,7 @@ services:
         depends_on:
             - deluge
         environment:
-            - VIRTUAL_HOST=deluge.justinql.local
+            - VIRTUAL_HOST=deluge.justinql.ca
             - VIRTUAL_PORT=80
             - NETWORK_ACCESS=internal
             - TZ=America/Toronto
@@ -173,29 +162,24 @@ services:
             - vpn-network
         command: -w "http://deluge:8112;/"
         restart: always
-    vpn:
-        image: dperson/openvpn-client
-        container_name: vpn
-        cap_add:
-            - NET_ADMIN
-        networks:
-            - vpn-network
-        volumes:
-            - openvpn_config:/vpn
-        dns:
-            - 8.8.8.8
-            - 8.8.4.4
 volumes:
     #ombi_config: {}
-    plex_config: {}
     jellyfin_config: {}
     jellyfin_cache: {}
     sonarr_config: {}
     radarr_config: {}
     deluge_config: {}
     #nbzhydra_config: {}
-    shows: {}
-    movies: {}
+    shows:
+      driver_opts:
+        type: nfs
+        o: addr=nas.jql,nfsvers=4
+        device: :/shows
+    movies:
+      driver_opts:
+        type: nfs
+        o: addr=nas.jql,nfsvers=4
+        device: :/movies
     downloads: {}
     nextcloud_config: {}
     nextcloud_data: {}
